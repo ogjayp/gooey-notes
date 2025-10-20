@@ -1,0 +1,45 @@
+/.env
+.env.local
+.env.development.local
+.env.production.local
+.env.*.local
+
+# Dependencies
+node_modules/
+
+# Builds and packaging outputs
+dist/
+out/
+release/
+*.asar
+
+# TypeScript build info
+*.tsbuildinfo
+
+# Logs
+npm-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+*.log
+
+# SQLite and local DBs
+*.sqlite
+*.sqlite-journal
+*.sqlite-shm
+*.sqlite-wal
+*.db
+*.db-journal
+
+# Caches / temp
+coverage/
+.cache/
+tmp/
+temp/
+
+# OS / editor files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
