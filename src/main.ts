@@ -79,8 +79,8 @@ function createMainWindow() {
     minHeight: 420,
     useContentSize: true,
     center: true,
-    show: true,
-    backgroundColor: '#1e1e1e',
+    show: false,
+    backgroundColor: '#0b0b0c',
     title: 'Gooey Notes',
     autoHideMenuBar: true,
     icon: getAppIconPath(),
@@ -125,6 +125,10 @@ function createMainWindow() {
   } else {
     mainWindow.loadFile(path.join(__dirname, 'renderer', 'index.html'));
   }
+
+  mainWindow.once('ready-to-show', () => {
+    mainWindow.show();
+  });
 }
 
 // --- Window state persistence for sticky note windows ---
@@ -197,9 +201,9 @@ function createNoteWindow(db: ReturnType<typeof drizzle>, noteId: number) {
     minHeight: 300,
     x: bounds.x,
     y: bounds.y,
-    backgroundColor: '#202020',
+    backgroundColor: '#0b0b0c',
     title: 'Sticky Note',
-    show: true,
+    show: false,
     autoHideMenuBar: true,
     icon: getAppIconPath(),
     webPreferences: {
@@ -242,6 +246,7 @@ function createNoteWindow(db: ReturnType<typeof drizzle>, noteId: number) {
 
   // Initial persist after first show
   win.once('ready-to-show', () => {
+    win.show();
     persistBounds();
   });
 
@@ -253,7 +258,7 @@ async function registerIpcHandlers(db: ReturnType<typeof drizzle>, sqlite?: Data
 
   ipcMain.handle('notes:list', async () => {
     const rows = db
-      .select({ id: notes.id, title: notes.title, createdAt: notes.createdAt, updatedAt: notes.updatedAt })
+      .select({ id: notes.id, title: notes.title, createdAt: notes.createdAt, updatedAt: notes.updatedAt, folderId: notes.folderId })
       .from(notes)
       .orderBy(desc(notes.updatedAt))
       .all();
@@ -304,6 +309,15 @@ async function registerIpcHandlers(db: ReturnType<typeof drizzle>, sqlite?: Data
     return row ?? null;
   });
 
+  // Move note to a folder (or null for All notes)
+  ipcMain.handle('notes:moveToFolder', async (_event, noteId: number, folderId: number | null) => {
+    const now = new Date().toISOString();
+    db.update(notes).set({ folderId: folderId ?? null, updatedAt: now }).where(eq(notes.id, noteId)).run();
+    const row = db.select().from(notes).where(eq(notes.id, noteId)).get();
+    if (row) broadcastNotesChanged();
+    return row ?? null;
+  });
+
   ipcMain.handle('notes:delete', async (_event, noteId: number) => {
     const result = db.delete(notes).where(eq(notes.id, noteId)).run();
     const ok = (result.changes ?? 0) > 0;
@@ -313,14 +327,14 @@ async function registerIpcHandlers(db: ReturnType<typeof drizzle>, sqlite?: Data
 
   ipcMain.handle('notes:search', async (_event, query: string) => {
     const q = (query || '').toLowerCase();
-    if (!q) return db.select({ id: notes.id, title: notes.title, createdAt: notes.createdAt, updatedAt: notes.updatedAt }).from(notes).orderBy(desc(notes.updatedAt)).all();
+    if (!q) return db.select({ id: notes.id, title: notes.title, createdAt: notes.createdAt, updatedAt: notes.updatedAt, folderId: notes.folderId }).from(notes).orderBy(desc(notes.updatedAt)).all();
     const rows = db
       .select()
       .from(notes)
       .where(or(like(notes.title, `%${q}%`), like(notes.content, `%${q}%`)))
       .orderBy(desc(notes.updatedAt))
       .all();
-    return rows.map(n => ({ id: n.id, title: n.title, createdAt: n.createdAt, updatedAt: n.updatedAt }));
+    return rows.map(n => ({ id: n.id, title: n.title, createdAt: n.createdAt, updatedAt: n.updatedAt, folderId: (n as any).folderId ?? null }));
   });
 
   // --- Folders ---
@@ -359,7 +373,7 @@ async function registerIpcHandlers(db: ReturnType<typeof drizzle>, sqlite?: Data
 
   // Notes: folder-aware listing/search
   ipcMain.handle('notes:listByFolder', async (_event, folderId?: number | null) => {
-    const sel = db.select({ id: notes.id, title: notes.title, createdAt: notes.createdAt, updatedAt: notes.updatedAt }).from(notes);
+    const sel = db.select({ id: notes.id, title: notes.title, createdAt: notes.createdAt, updatedAt: notes.updatedAt, folderId: notes.folderId }).from(notes);
     const rows = folderId
       ? sel.where(eq(notes.folderId, folderId)).orderBy(desc(notes.updatedAt)).all()
       : sel.orderBy(desc(notes.updatedAt)).all();
@@ -369,13 +383,13 @@ async function registerIpcHandlers(db: ReturnType<typeof drizzle>, sqlite?: Data
   ipcMain.handle('notes:searchInFolder', async (_event, query: string, folderId?: number | null) => {
     const q = (query || '').toLowerCase();
     if (!q && !folderId) {
-      return db.select({ id: notes.id, title: notes.title, createdAt: notes.createdAt, updatedAt: notes.updatedAt }).from(notes).orderBy(desc(notes.updatedAt)).all();
+      return db.select({ id: notes.id, title: notes.title, createdAt: notes.createdAt, updatedAt: notes.updatedAt, folderId: notes.folderId }).from(notes).orderBy(desc(notes.updatedAt)).all();
     }
     const whereLike = or(like(notes.title, `%${q}%`), like(notes.content, `%${q}%`));
     const rows = folderId
       ? db.select().from(notes).where(and(eq(notes.folderId, folderId), whereLike)).orderBy(desc(notes.updatedAt)).all()
       : db.select().from(notes).where(whereLike).orderBy(desc(notes.updatedAt)).all();
-    return rows.map(n => ({ id: n.id, title: n.title, createdAt: n.createdAt, updatedAt: n.updatedAt }));
+    return rows.map(n => ({ id: n.id, title: n.title, createdAt: n.createdAt, updatedAt: n.updatedAt, folderId: (n as any).folderId ?? null }));
   });
 
   // Sticky windows API

@@ -10,7 +10,7 @@ module.exports = {
     icon: path.resolve(__dirname, 'assets', 'favicon.ico'),
     appBundleId: 'com.electron.notes',
     win32metadata: {
-      CompanyName: 'Your Company',
+      CompanyName: 'ogjayp',
       FileDescription: 'Gooey Notes',
       ProductName: 'Gooey Notes',
     },

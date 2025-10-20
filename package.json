@@ -1,6 +1,6 @@
 {
   "name": "electron-notes",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Gooey Notes, sticky notes for your desktop.",
   "productName": "Gooey Notes",
   "main": "dist/main.js",

@@ -9,7 +9,7 @@ const MoreMenu = React.lazy(() => import('@/components/MoreMenu'));
 function StickyNoteWindow() {
   const search = new URLSearchParams(window.location.search);
   const noteId = Number(search.get('noteId'));
-  const [note, setNote] = React.useState<{ id: number; title: string; content: string; updatedAt: string } | null>(null);
+  const [note, setNote] = React.useState<{ id: number; title: string; content: string; updatedAt: string; folderId?: number | null } | null>(null);
   const [title, setTitle] = React.useState('');
   const [content, setContent] = React.useState('');
   const [status, setStatus] = React.useState('');
@@ -49,6 +49,11 @@ function StickyNoteWindow() {
         />
         <React.Suspense fallback={null}>
           <MoreMenu
+            noteId={note.id}
+            currentFolderId={note.folderId ?? null}
+            onMoved={(folderId) => {
+              setNote(n => n ? { ...n, folderId } : n);
+            }}
             onClose={() => window.api.sticky.closeSelf()}
             onDelete={async () => {
               if (!note) return;

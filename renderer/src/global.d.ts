@@ -4,23 +4,27 @@ declare global {
   interface Window {
     api: {
       notes: {
-        list: () => Promise<Array<{ id: number; title: string; createdAt: string; updatedAt: string }>>;
+        list: () => Promise<Array<{ id: number; title: string; createdAt: string; updatedAt: string; folderId?: number | null }>>;
         listByFolder: (
           folderId?: number | null
-        ) => Promise<Array<{ id: number; title: string; createdAt: string; updatedAt: string }>>;
-        get: (id: number) => Promise<{ id: number; title: string; content: string; createdAt: string; updatedAt: string } | null>;
+        ) => Promise<Array<{ id: number; title: string; createdAt: string; updatedAt: string; folderId?: number | null }>>;
+        get: (id: number) => Promise<{ id: number; title: string; content: string; createdAt: string; updatedAt: string; folderId?: number | null } | null>;
         create: (title: string) => Promise<number>;
         createInFolder: (folderId: number, title: string) => Promise<number>;
         update: (
           id: number,
           updates: { title?: string; content?: string }
         ) => Promise<{ id: number; title: string; content: string; createdAt: string; updatedAt: string } | null>;
+        moveToFolder: (
+          id: number,
+          folderId: number | null
+        ) => Promise<{ id: number; title: string; content: string; createdAt: string; updatedAt: string; folderId?: number | null } | null>;
         delete: (id: number) => Promise<boolean>;
-        search: (query: string) => Promise<Array<{ id: number; title: string; createdAt: string; updatedAt: string }>>;
+        search: (query: string) => Promise<Array<{ id: number; title: string; createdAt: string; updatedAt: string; folderId?: number | null }>>;
         searchInFolder: (
           query: string,
           folderId?: number | null
-        ) => Promise<Array<{ id: number; title: string; createdAt: string; updatedAt: string }>>;
+        ) => Promise<Array<{ id: number; title: string; createdAt: string; updatedAt: string; folderId?: number | null }>>;
         onChanged: (cb: () => void) => () => void;
       };
       folders: {

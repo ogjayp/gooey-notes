@@ -8,8 +8,9 @@ import { Input } from './components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './components/ui/dropdown-menu';
 import { PlusIcon, SettingsIcon } from 'lucide-react';
 import { Switch } from './components/ui/switch';
+const MoreMenu = React.lazy(() => import('@/components/MoreMenu'));
 
-type NoteListItem = { id: number; title: string; createdAt: string; updatedAt: string };
+type NoteListItem = { id: number; title: string; createdAt: string; updatedAt: string; folderId?: number | null };
 type Folder = { id: number; name: string; createdAt: string; updatedAt: string };
 
 export default function App() {
@@ -179,8 +180,27 @@ export default function App() {
                 onClick={() => openNote(n.id)}
                 className={"cursor-pointer border-b border-neutral-800 px-3 py-2 hover:bg-neutral-850"}
               >
-                <div className="truncate">{n.title}</div>
-                <div className="mt-0.5 text-[11px] text-neutral-400">Updated {new Date(n.updatedAt).toLocaleString()}</div>
+                <div className="flex items-center gap-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate">{n.title}</div>
+                    <div className="mt-0.5 text-[11px] text-neutral-400">Updated {new Date(n.updatedAt).toLocaleString()}</div>
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
+                    <React.Suspense fallback={null}>
+                      <MoreMenu
+                        noteId={n.id}
+                        currentFolderId={n.folderId ?? null}
+                        onMoved={async () => { await refresh(); }}
+                        onDelete={async () => {
+                          const ok = window.confirm('Delete this note? This cannot be undone.');
+                          if (!ok) return;
+                          await window.api.notes.delete(n.id);
+                          await refresh();
+                        }}
+                      />
+                    </React.Suspense>
+                  </div>
+                </div>
               </div>
             ))}
           </div>

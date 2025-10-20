@@ -12,6 +12,7 @@ contextBridge.exposeInMainWorld('api', {
     create: (title: string) => invoke('notes:create', title),
     createInFolder: (folderId: number, title: string) => invoke('notes:createInFolder', folderId, title),
     update: (noteId: number, updates: { title?: string; content?: string }) => invoke('notes:update', noteId, updates),
+    moveToFolder: (noteId: number, folderId: number | null) => invoke('notes:moveToFolder', noteId, folderId),
     delete: (noteId: number) => invoke('notes:delete', noteId),
     search: (query: string) => invoke('notes:search', query),
     searchInFolder: (query: string, folderId?: number | null) => invoke('notes:searchInFolder', query, folderId ?? null),
